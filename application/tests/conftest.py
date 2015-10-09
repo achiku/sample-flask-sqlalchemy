@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
+import inspect
+
 import pytest
+
 from application import create_app
+
 from ..dbms.rdb import db as _db
-from .factories import (
-    ItemFactory, ItemHistoryFactory,
-)
+from . import factories
 
 
 @pytest.yield_fixture(scope='session')
@@ -16,7 +18,7 @@ def app():
     ctx.pop()
 
 
-@pytest.yield_fixture(scope='session')
+@pytest.yield_fixture(scope='function')
 def db(app):
     _db.drop_all()
     _db.create_all()
@@ -26,10 +28,32 @@ def db(app):
 
 @pytest.yield_fixture(scope='function')
 def session(db):
-    yield db.session
-    db.session.flush()
-    db.session.rollback()
-    db.session.remove()
+    # connect to the database
+    connection = db.engine.connect()
+    # begin a non-ORM transaction
+    transaction = connection.begin()
+
+    # bind an individual session to the connection
+    # options = dict(bind=connection, binds={})
+    options = dict(bind=connection)
+    session = db.create_scoped_session(options=options)
+
+    # overload the default session with the session above
+    db.session = session
+
+    # overload session in factory classes
+    for name, cls in inspect.getmembers(factories, inspect.isclass):
+        if cls.__class__.__name__ == 'FactoryMetaClass':
+            cls._meta.sqlalchemy_session = session
+
+    yield session
+    session.close()
+    # rollback - everything that happened with the
+    # session above (including calls to commit())
+    # is rolled back.
+    transaction.rollback()
+    # return connection to the Engine
+    connection.close()
 
 
 @pytest.fixture()
@@ -39,17 +63,17 @@ def test_client(app):
 
 @pytest.fixture()
 def item_data(session):
-    return ItemFactory.create_batch(10)
+    return factories.ItemFactory.create_batch(10)
 
 
 @pytest.fixture()
 def item_history_data(session):
-    return ItemHistoryFactory.create_batch(10)
+    return factories.ItemHistoryFactory.create_batch(10)
 
 
 @pytest.fixture()
 def api_url_data(session):
-    items = ItemFactory.create_batch(2)
+    items = factories.ItemFactory.create_batch(2)
     return {
         'items': items,
         'single_item_id': items[0].id
