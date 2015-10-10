@@ -4,8 +4,8 @@ import inspect
 import pytest
 
 from application import create_app
+from application.dbms.rdb import db as _db
 
-from ..dbms.rdb import db as _db
 from . import factories
 
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from ..dbms.large_models import ItemHistory
-from ..dbms.small_models import Item
+from application.dbms.large_models import ItemHistory
+from application.dbms.small_models import Item
 
 
 def test_item_model(item_data):
