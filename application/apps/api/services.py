@@ -2,7 +2,7 @@
 from ...dbms.large_models import ItemHistory
 from ...dbms.small_models import Item
 from ...dbms.rdb import db
-from ...libs.utils import sqla2dict, kt2dict
+from ...libs.utils import sqla2dict
 
 
 def get_items():

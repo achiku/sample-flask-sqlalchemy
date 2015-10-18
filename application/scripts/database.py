@@ -36,7 +36,7 @@ def create(db_name):
 
 
 @manager.command
-def populate():
+def create_data():
     "Populate tables with dummy data"
     items = ItemFactory.create_batch(10)
     for i in items:
